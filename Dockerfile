@@ -2,10 +2,12 @@
 FROM prologic/go-builder:latest AS build
 
 # Runtime
-FROM golang:alpine
+FROM scratch
 
-RUN apk --no-cache -U add git build-base
+WORKDIR /
+VOLUME /feeds
 
+COPY .dockerfiles/config.yaml /config.yaml
 COPY --from=build /src/rss2twtxt /rss2twtxt
 
 ENTRYPOINT ["/rss2twtxt"]
