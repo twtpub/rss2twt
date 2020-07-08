@@ -2,7 +2,9 @@
 FROM prologic/go-builder:latest AS build
 
 # Runtime
-FROM scratch
+FROM alpine:latest
+
+RUN apk --no-cache -U add ca-certificates
 
 WORKDIR /
 VOLUME /feeds
