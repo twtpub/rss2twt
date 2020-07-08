@@ -1,48 +1,67 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"log"
 	"os"
-	"time"
 
-	"github.com/mmcdole/gofeed"
+	log "github.com/sirupsen/logrus"
+	flag "github.com/spf13/pflag"
 )
+
+var (
+	version bool
+	debug   bool
+
+	server bool
+	bind   string
+	config string
+)
+
+func init() {
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n", os.Args[0])
+		flag.PrintDefaults()
+	}
+
+	flag.BoolVarP(&version, "version", "v", false, "display version information")
+	flag.BoolVarP(&debug, "debug", "d", false, "enable debug logging")
+
+	flag.BoolVarP(&server, "server", "s", false, "enable server mode")
+	flag.StringVarP(&bind, "bind", "b", "0.0.0.0:8000", "interface and port to bind to in server mode")
+	flag.StringVarP(&config, "config", "c", "config.yaml", "configuration file for server mode")
+}
 
 func main() {
 	flag.Parse()
 
-	url := flag.Arg(0)
-	filename := flag.Arg(1)
-
-	fp := gofeed.NewParser()
-	feed, err := fp.ParseURL(url)
-	if err != nil {
-		log.Fatal(err)
+	if debug {
+		log.SetLevel(log.DebugLevel)
+	} else {
+		log.SetLevel(log.InfoLevel)
 	}
 
-	var lastModified = time.Time{}
-
-	stat, err := os.Stat(filename)
-	if err == nil {
-		lastModified = stat.ModTime()
+	if version {
+		fmt.Printf("rss2twtxt %s\n", FullVersion())
+		os.Exit(0)
 	}
 
-	f, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	for _, item := range feed.Items {
-		if item.PublishedParsed.After(lastModified) {
-			text := fmt.Sprintf("%s\t%s ⌘ %s\n", time.Now().Format(time.RFC3339), item.Title, item.Link)
-			n, err := f.WriteString(text)
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Printf("appended %d bytes to %s:\n%s", n, filename, text)
+	if server {
+		app, err := NewApp(bind, config)
+		if err != nil {
+			log.WithError(err).Fatal("error creating app for server mode")
 		}
+		if err := app.Run(); err != nil {
+			log.WithError(err).Fatal("error running app")
+		}
+		os.Exit(0)
+	}
+
+	url := flag.Arg(0)
+	name := flag.Arg(1)
+
+	filename := fmt.Sprintf("%s.txt", name)
+
+	if err := UpdateFeed(filename, url); err != nil {
+		log.WithError(err).Fatal("error updating feed")
 	}
 }

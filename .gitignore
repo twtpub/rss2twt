@@ -2,4 +2,6 @@
 *.bak
 *.txt
 
+/feeds
 /rss2twtxt
+/config.yaml
