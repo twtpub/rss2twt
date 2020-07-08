@@ -36,5 +36,10 @@ func LoadConfig(filename string) (*Config, error) {
 		return nil, err
 	}
 	conf.path = filename
+
+	if conf.Feeds == nil {
+		conf.Feeds = make(map[string]string)
+	}
+
 	return conf, nil
 }
