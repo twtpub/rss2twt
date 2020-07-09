@@ -61,15 +61,15 @@ const indexTemplate = `
         </form>
 	  </div>
 	</article>
-    <footer class="container-fluid">
-      <hr>
-      <p>
-        <small>
-          Licensed under the <a href="https://github.com/prologic/rss2twtxt/blob/master/LICENSE" class="secondary">MIT License</a><br>
-        </small>
-      </p>
-    </footer>
   </main>
+  <footer class="container-fluid">
+    <hr>
+    <p>
+      <small>
+        Licensed under the <a href="https://github.com/prologic/rss2twtxt/blob/master/LICENSE" class="secondary">MIT License</a><br>
+      </small>
+    </p>
+  </footer>
 </body>
 </html>
 `
@@ -108,15 +108,15 @@ const feedsTemplate = `
 	    </ul>
 	  </div>
 	</article>
-    <footer class="container-fluid">
-      <hr>
-      <p>
-        <small>
-          Licensed under the <a href="https://github.com/prologic/rss2twtxt/blob/master/LICENSE" class="secondary">MIT License</a><br>
-        </small>
-      </p>
-    </footer>
   </main>
+  <footer class="container-fluid">
+    <hr>
+    <p>
+      <small>
+        Licensed under the <a href="https://github.com/prologic/rss2twtxt/blob/master/LICENSE" class="secondary">MIT License</a><br>
+      </small>
+    </p>
+  </footer>
 </body>
 </html>
 `
@@ -151,15 +151,15 @@ const messageTemplate = `
 	    <p>{{ .Message }}</p>
 	  </div>
 	</article>
-    <footer class="container-fluid">
-      <hr>
-      <p>
-        <small>
-          Licensed under the <a href="https://github.com/prologic/rss2twtxt/blob/master/LICENSE" class="secondary">MIT License</a><br>
-        </small>
-      </p>
-    </footer>
   </main>
+  <footer class="container-fluid">
+    <hr>
+    <p>
+      <small>
+        Licensed under the <a href="https://github.com/prologic/rss2twtxt/blob/master/LICENSE" class="secondary">MIT License</a><br>
+      </small>
+    </p>
+  </footer>
 </body>
 </html>
 `
