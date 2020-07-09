@@ -11,6 +11,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
 func render(name, tmpl string, ctx interface{}, w io.Writer) error {
@@ -118,13 +119,13 @@ func (app *App) FeedHandler(w http.ResponseWriter, r *http.Request) {
 func (app *App) FeedsHandler(w http.ResponseWriter, r *http.Request) {
 	var feeds []Feed
 
-	for name, _ := range app.conf.Feeds {
+	for name := range app.conf.Feeds {
 		filename := filepath.Join(app.conf.Root, fmt.Sprintf("%s.txt", name))
 
 		stat, err := os.Stat(filename)
 		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
+			log.WithError(err).Warnf("error getting feed stats for %s", name)
+			continue
 		}
 		lastModified := humanize.Time(stat.ModTime())
 
