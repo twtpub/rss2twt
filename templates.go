@@ -22,8 +22,17 @@ const indexTemplate = `
 	</hgroup>
 	<p>
 	  rss2twtxt is a command-line tool and web app that processes RSS feeds
-	nto <a href="https://twtxt.readthedocs.io/en/stable/index.html">twtxt</a>
-	eeds for consumption by <i>twtxt</i> clients.
+	  into <a href="https://twtxt.readthedocs.io/en/stable/index.html">twtxt</a>
+	  feeds for consumption by <i>twtxt</i> clients.
+	</p>
+	<p>
+	  You may freely create new feeds here by adding them in the form below
+	  by providing a name for the feed and its URL. Please only submit valid
+	  RSS/Atom feeds.
+	</p>
+	<p>
+	  You are also welcome to subscribe to any of the <a href="/feeds">feeds</a>
+	  with your favorite <i>twtxt</i> client (<i>I like using <a href="https://github.com/quite/twet">twet</a></i>).
 	</p>
 	<form action="/" method="POST">
       <div class="grid">
