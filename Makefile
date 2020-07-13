@@ -8,6 +8,7 @@ all: dev
 
 dev: build
 	@./rss2twtxt -v
+	@./rss2twtxt -s
 
 build: clean
 	@go build \

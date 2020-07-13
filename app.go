@@ -1,8 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"os"
+	"path/filepath"
+	"sort"
 
+	"github.com/dustin/go-humanize"
 	"github.com/gorilla/mux"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
@@ -35,6 +40,7 @@ func (app *App) initRoutes() *mux.Router {
 
 	router.HandleFunc("/", app.IndexHandler).Methods(http.MethodGet, http.MethodPost)
 	router.HandleFunc("/feeds", app.FeedsHandler).Methods(http.MethodGet)
+	router.HandleFunc("/we-are-feeds.txt", app.WeAreFeedsHandler).Methods(http.MethodGet)
 	router.HandleFunc("/{name}/twtxt.txt", app.FeedHandler).Methods(http.MethodGet)
 
 	return router
@@ -48,6 +54,26 @@ func (app *App) setupCronJobs() error {
 		}
 	}
 	return nil
+}
+
+func (app *App) GetFeeds() (feeds []Feed) {
+	for name := range app.conf.Feeds {
+		filename := filepath.Join(app.conf.Root, fmt.Sprintf("%s.txt", name))
+
+		stat, err := os.Stat(filename)
+		if err != nil {
+			log.WithError(err).Warnf("error getting feed stats for %s", name)
+			continue
+		}
+		lastModified := humanize.Time(stat.ModTime())
+
+		url := filepath.Join(app.conf.BaseURL, fmt.Sprintf("%s/twtxt.txt", name))
+		feeds = append(feeds, Feed{name, url, lastModified})
+	}
+
+	sort.Slice(feeds, func(i, j int) bool { return feeds[i].Name < feeds[j].Name })
+
+	return
 }
 
 func (app *App) Run() error {

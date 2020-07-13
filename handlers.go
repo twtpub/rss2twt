@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"path/filepath"
-	"sort"
 	"text/template"
 
-	"github.com/dustin/go-humanize"
 	"github.com/gorilla/mux"
+	"github.com/rickb777/accept"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -116,31 +114,24 @@ func (app *App) FeedHandler(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, filename)
 }
 
-func (app *App) FeedsHandler(w http.ResponseWriter, r *http.Request) {
-	var feeds []Feed
-
-	for name := range app.conf.Feeds {
-		filename := filepath.Join(app.conf.Root, fmt.Sprintf("%s.txt", name))
-
-		stat, err := os.Stat(filename)
-		if err != nil {
-			log.WithError(err).Warnf("error getting feed stats for %s", name)
-			continue
-		}
-		lastModified := humanize.Time(stat.ModTime())
-
-		url := filepath.Join(app.conf.BaseURL, fmt.Sprintf("%s/twtxt.txt", name))
-		feeds = append(feeds, Feed{name, url, lastModified})
+func (app *App) WeAreFeedsHandler(w http.ResponseWriter, r *http.Request) {
+	for _, feed := range app.GetFeeds() {
+		fmt.Fprintf(w, "%s %s\n", feed.Name, feed.URL)
 	}
+}
 
-	sort.Slice(feeds, func(i, j int) bool { return feeds[i].Name < feeds[j].Name })
+func (app *App) FeedsHandler(w http.ResponseWriter, r *http.Request) {
+	if accept.PreferredContentTypeLike(r.Header, "text/plain") == "text/plain" {
+		app.WeAreFeedsHandler(w, r)
+		return
+	}
 
 	ctx := struct {
 		Title string
 		Feeds []Feed
 	}{
 		Title: "Feeds",
-		Feeds: feeds,
+		Feeds: app.GetFeeds(),
 	}
 
 	if err := render("feeds", feedsTemplate, ctx, w); err != nil {
