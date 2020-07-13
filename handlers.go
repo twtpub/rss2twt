@@ -49,7 +49,7 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := render("index", indexTemplate, ctx, w); err != nil {
-			fmt.Fprintf(w, fmt.Errorf("error %w", err).Error())
+			log.WithError(err).Error("error rending index template")
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
 	} else if r.Method == http.MethodPost {
@@ -58,7 +58,7 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 		if name == "" {
 			if err := renderMessage(w, http.StatusBadRequest, "Error", "No name supplied"); err != nil {
-				fmt.Fprintf(w, fmt.Errorf("error %w", err).Error())
+				log.WithError(err).Error("error rendering message template")
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			}
 			return
@@ -66,7 +66,7 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 		if url == "" {
 			if err := renderMessage(w, http.StatusBadRequest, "Error", "No url supplied"); err != nil {
-				fmt.Fprintf(w, fmt.Errorf("error %w", err).Error())
+				log.WithError(err).Error("error rendering message template")
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			}
 			return
@@ -76,7 +76,7 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 		if _, ok := app.conf.Feeds[name]; ok {
 			if err := renderMessage(w, http.StatusConflict, "Error", "Feed alreadyd exists"); err != nil {
-				fmt.Fprintf(w, fmt.Errorf("error %w", err).Error())
+				log.WithError(err).Error("error rendering message template")
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			}
 			return
@@ -86,7 +86,7 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 		if err := app.conf.Save(); err != nil {
 			msg := fmt.Sprintf("Could not save feed: %s", err)
 			if err := renderMessage(w, http.StatusInternalServerError, "Error", msg); err != nil {
-				fmt.Fprintf(w, fmt.Errorf("error %w", err).Error())
+				log.WithError(err).Error("error rendering message template")
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			}
 			return
@@ -94,7 +94,7 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 		msg := fmt.Sprintf("Feed successfully added %s: %s", name, url)
 		if err := renderMessage(w, http.StatusCreated, "Success", msg); err != nil {
-			fmt.Fprintf(w, fmt.Errorf("error %w", err).Error())
+			log.WithError(err).Error("error rendering message template")
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
 	} else {
@@ -144,7 +144,7 @@ func (app *App) FeedsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := render("feeds", feedsTemplate, ctx, w); err != nil {
-		fmt.Fprintf(w, fmt.Errorf("error %w", err).Error())
+		log.WithError(err).Error("error rendering feeds template")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 	}
 }
