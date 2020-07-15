@@ -67,7 +67,7 @@ func (app *App) GetFeeds() (feeds []Feed) {
 		}
 		lastModified := humanize.Time(stat.ModTime())
 
-		url := filepath.Join(app.conf.BaseURL, fmt.Sprintf("%s/twtxt.txt", name))
+		url := fmt.Sprintf("%s/%s/twtxt.txt", app.conf.BaseURL, name)
 		feeds = append(feeds, Feed{name, url, lastModified})
 	}
 
