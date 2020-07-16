@@ -37,7 +37,7 @@ func UpdateFeed(filename, url string) error {
 
 	for _, item := range feed.Items {
 		if item.PublishedParsed.After(lastModified) {
-			text := fmt.Sprintf("%s\t%s ⌘ %s\n", time.Now().Format(time.RFC3339), item.Title, item.Link)
+			text := fmt.Sprintf("%s\t%s ⌘ %s\n", item.PublishedParsed.Format(time.RFC3339), item.Title, item.Link)
 			n, err := f.WriteString(text)
 			if err != nil {
 				return err
