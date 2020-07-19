@@ -40,6 +40,10 @@ $ rss2twtxt
 
 Then visit: http://localhost:8000/
 
+## Related Projects
+
+- [twtxt](https://github.com/prologic/twtxt)
+
 ## License
 
 `rss2twtxt` is licensed under the terms of the [MIT License](/LICENSE)
