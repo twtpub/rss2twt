@@ -15,6 +15,15 @@ type Feed struct {
 	LastModified string
 }
 
+func ValidateFeed(url string) error {
+	fp := gofeed.NewParser()
+	_, err := fp.ParseURL(url)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func UpdateFeed(filename, url string) error {
 	fp := gofeed.NewParser()
 	feed, err := fp.ParseURL(url)

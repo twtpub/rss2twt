@@ -70,7 +70,23 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// TODO: Validate Name/URL for validity/length
+		if err := ValidateName(name); err != nil {
+			if err := renderMessage(w, http.StatusBadRequest, "Error", "Invalid feed name"); err != nil {
+				log.WithError(err).Error("error rendering message template")
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			}
+			return
+		}
+
+		if err := ValidateFeed(url); err != nil {
+			if err := renderMessage(w, http.StatusBadRequest, "Error", fmt.Sprintf("Invalid feed RSS/Atom feed: %s", url)); err != nil {
+				log.WithError(err).Error("error rendering message template")
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			}
+			return
+		}
+
+		name = NormalizeName(name)
 
 		if _, ok := app.conf.Feeds[name]; ok {
 			if err := renderMessage(w, http.StatusConflict, "Error", "Feed alreadyd exists"); err != nil {
