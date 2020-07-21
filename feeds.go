@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/apex/log"
 	"github.com/mmcdole/gofeed"
-	log "github.com/sirupsen/logrus"
 )
 
 type Feed struct {
@@ -45,13 +45,17 @@ func UpdateFeed(filename, url string) error {
 	defer f.Close()
 
 	for _, item := range feed.Items {
+		if item.PublishedParsed == nil {
+			log.WithField("item", item).Warn("item has no published date")
+			continue
+		}
+
 		if item.PublishedParsed.After(lastModified) {
 			text := fmt.Sprintf("%s\t%s ⌘ %s\n", item.PublishedParsed.Format(time.RFC3339), item.Title, item.Link)
-			n, err := f.WriteString(text)
+			_, err := f.WriteString(text)
 			if err != nil {
 				return err
 			}
-			log.Debugf("appended %d bytes to %s:\n%s", n, filename, text)
 		}
 	}
 
