@@ -71,7 +71,7 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := ValidateName(name); err != nil {
-			if err := renderMessage(w, http.StatusBadRequest, "Error", "Invalid feed name"); err != nil {
+			if err := renderMessage(w, http.StatusBadRequest, "Error", fmt.Sprintf("Invalid feed name: %s", err)); err != nil {
 				log.WithError(err).Error("error rendering message template")
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			}
