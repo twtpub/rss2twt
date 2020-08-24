@@ -137,7 +137,7 @@ func (app *App) FeedHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
-		w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size))
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
 
 		if r.Method == http.MethodHead {
 			return
@@ -199,7 +199,7 @@ func (app *App) AvatarHandler(w http.ResponseWriter, r *http.Request) {
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 				return
 			}
-			w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size))
+			w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
 
 			if r.Method == http.MethodHead {
 				return
