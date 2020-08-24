@@ -1,9 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"path/filepath"
-
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 )
@@ -29,8 +26,7 @@ func NewUpdateFeedsJob(conf *Config) cron.Job {
 func (job *UpdateFeedsJob) Run() {
 	conf := job.conf
 	for name, url := range conf.Feeds {
-		filename := filepath.Join(conf.Root, fmt.Sprintf("%s.txt", name))
-		if err := UpdateFeed(filename, url); err != nil {
+		if err := UpdateFeed(conf, name, url); err != nil {
 			log.WithError(err).Errorf("error updating feed %s: %s", name, url)
 		}
 	}

@@ -42,6 +42,7 @@ func (app *App) initRoutes() *mux.Router {
 	router.HandleFunc("/feeds", app.FeedsHandler).Methods(http.MethodGet)
 	router.HandleFunc("/we-are-feeds.txt", app.WeAreFeedsHandler).Methods(http.MethodGet)
 	router.HandleFunc("/{name}/twtxt.txt", app.FeedHandler).Methods(http.MethodGet)
+	router.HandleFunc("/{name}/avatar.png", app.AvatarHandler).Methods(http.MethodGet)
 
 	return router
 }

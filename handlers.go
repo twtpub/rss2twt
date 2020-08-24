@@ -1,12 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"image/png"
 	"io"
 	"net/http"
+	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
+	"time"
 
+	"github.com/aofei/cameron"
 	"github.com/gorilla/mux"
 	"github.com/rickb777/accept"
 	log "github.com/sirupsen/logrus"
@@ -60,7 +66,7 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		feed, err := ValidateFeed(url)
+		feed, err := ValidateFeed(app.conf, url)
 		if err != nil {
 			if err := renderMessage(w, http.StatusBadRequest, "Error", fmt.Sprintf("Unable to find a valid RSS/Atom feed for: %s", url)); err != nil {
 				log.WithError(err).Error("error rendering message template")
@@ -109,6 +115,72 @@ func (app *App) FeedHandler(w http.ResponseWriter, r *http.Request) {
 	filename := filepath.Join(app.conf.Root, fmt.Sprintf("%s.txt", name))
 
 	http.ServeFile(w, r, filename)
+}
+
+func (app *App) AvatarHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "image/png")
+	w.Header().Set("Cache-Control", "public, no-cache, must-revalidate")
+
+	vars := mux.Vars(r)
+
+	name := vars["name"]
+	if name == "" {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	fn := filepath.Join(app.conf.Root, fmt.Sprintf("%s.png", name))
+	if fileInfo, err := os.Stat(fn); err == nil {
+		etag := fmt.Sprintf("W/\"%s-%s\"", r.RequestURI, fileInfo.ModTime().Format(time.RFC3339))
+
+		if match := r.Header.Get("If-None-Match"); match != "" {
+			if strings.Contains(match, etag) {
+				w.WriteHeader(http.StatusNotModified)
+				return
+			}
+		}
+
+		w.Header().Set("Etag", etag)
+		if r.Method == http.MethodHead {
+			return
+		}
+
+		f, err := os.Open(fn)
+		if err != nil {
+			log.WithError(err).Error("error opening avatar file")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		defer f.Close()
+
+		if _, err := io.Copy(w, f); err != nil {
+			log.WithError(err).Error("error writing avatar response")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		return
+	}
+
+	etag := fmt.Sprintf("W/\"%s\"", r.RequestURI)
+
+	if match := r.Header.Get("If-None-Match"); match != "" {
+		if strings.Contains(match, etag) {
+			w.WriteHeader(http.StatusNotModified)
+			return
+		}
+	}
+
+	w.Header().Set("Etag", etag)
+	if r.Method == http.MethodHead {
+		return
+	}
+
+	buf := bytes.Buffer{}
+	img := cameron.Identicon([]byte(name), avatarResolution, 12)
+	png.Encode(&buf, img)
+
+	w.Write(buf.Bytes())
 }
 
 func (app *App) WeAreFeedsHandler(w http.ResponseWriter, r *http.Request) {

@@ -59,9 +59,7 @@ func main() {
 	url := flag.Arg(0)
 	name := flag.Arg(1)
 
-	filename := fmt.Sprintf("%s.txt", name)
-
-	if err := UpdateFeed(filename, url); err != nil {
+	if err := UpdateFeed(&Config{Root: "."}, name, url); err != nil {
 		log.WithError(err).Fatal("error updating feed")
 	}
 }
