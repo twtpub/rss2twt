@@ -89,13 +89,13 @@ func FindFeed(uri string) (*gofeed.Feed, string, error) {
 func ValidateFeed(conf *Config, url string) (Feed, error) {
 	feed, err := TestFeed(url)
 	if err != nil {
-		log.WithError(err).Warn("invalid feed %s", url)
+		log.WithError(err).Warnf("invalid feed %s", url)
 	}
 
 	if feed == nil {
 		feed, url, err = FindFeed(url)
 		if err != nil {
-			log.WithError(err).Error("no feed found on %s", url)
+			log.WithError(err).Errorf("no feed found on %s", url)
 			return Feed{}, err
 		}
 	}

@@ -67,7 +67,7 @@ type ImageOptions struct {
 func DownloadImage(conf *Config, url string, filename string, opts *ImageOptions) error {
 	res, err := http.Get(url)
 	if err != nil {
-		log.WithError(err).Error("error downloading image from %s", url)
+		log.WithError(err).Errorf("error downloading image from %s", url)
 		return err
 	}
 	defer res.Body.Close()
