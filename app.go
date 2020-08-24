@@ -38,11 +38,11 @@ func NewApp(bind, config string) (*App, error) {
 func (app *App) initRoutes() *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 
-	router.HandleFunc("/", app.IndexHandler).Methods(http.MethodGet, http.MethodPost)
-	router.HandleFunc("/feeds", app.FeedsHandler).Methods(http.MethodGet)
-	router.HandleFunc("/we-are-feeds.txt", app.WeAreFeedsHandler).Methods(http.MethodGet)
-	router.HandleFunc("/{name}/twtxt.txt", app.FeedHandler).Methods(http.MethodGet)
-	router.HandleFunc("/{name}/avatar.png", app.AvatarHandler).Methods(http.MethodGet)
+	router.HandleFunc("/", app.IndexHandler).Methods(http.MethodGet, http.MethodHead, http.MethodPost)
+	router.HandleFunc("/feeds", app.FeedsHandler).Methods(http.MethodGet, http.MethodHead)
+	router.HandleFunc("/we-are-feeds.txt", app.WeAreFeedsHandler).Methods(http.MethodGet, http.MethodHead)
+	router.HandleFunc("/{name}/twtxt.txt", app.FeedHandler).Methods(http.MethodGet, http.MethodHead)
+	router.HandleFunc("/{name}/avatar.png", app.AvatarHandler).Methods(http.MethodGet, http.MethodHead)
 
 	return router
 }

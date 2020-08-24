@@ -44,18 +44,27 @@ func renderMessage(w http.ResponseWriter, status int, title, message string) err
 }
 
 func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
+	if r.Method == http.MethodHead || r.Method == http.MethodGet {
+		w.Header().Set("Content-Type", "text/html")
+
 		ctx := struct {
 			Title string
 		}{
 			Title: "RSS/Atom to twtxt feed aggregator service",
 		}
 
+		if r.Method == http.MethodHead {
+			return
+		}
+
 		if err := render("index", indexTemplate, ctx, w); err != nil {
 			log.WithError(err).Error("error rending index template")
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
-	} else if r.Method == http.MethodPost {
+		return
+	}
+
+	if r.Method == http.MethodPost {
 		url := r.FormValue("url")
 
 		if url == "" {
@@ -98,40 +107,114 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 			log.WithError(err).Error("error rendering message template")
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
-	} else {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		return
 	}
+	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 }
 
 func (app *App) FeedHandler(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
+	if r.Method == http.MethodHead || r.Method == http.MethodGet {
+		w.Header().Set("Content-Type", "text/plain")
 
-	name := vars["name"]
-	if name == "" {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
+		vars := mux.Vars(r)
+
+		name := vars["name"]
+		if name == "" {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+
+		filename := filepath.Join(app.conf.Root, fmt.Sprintf("%s.txt", name))
+		if !Exists(filename) {
+			log.Warnf("feed does not exist %s", name)
+			http.Error(w, "Feed not found", http.StatusNotFound)
+			return
+		}
+
+		fileInfo, err := os.Stat(filename)
+		if err != nil {
+			log.WithError(err).Error("os.Stat() error")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size))
+
+		if r.Method == http.MethodHead {
+			return
+		}
+
+		http.ServeFile(w, r, filename)
 		return
 	}
-
-	filename := filepath.Join(app.conf.Root, fmt.Sprintf("%s.txt", name))
-
-	http.ServeFile(w, r, filename)
+	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 }
 
 func (app *App) AvatarHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "image/png")
-	w.Header().Set("Cache-Control", "public, no-cache, must-revalidate")
+	if r.Method == http.MethodHead || r.Method == http.MethodGet {
+		w.Header().Set("Content-Type", "image/png")
+		w.Header().Set("Cache-Control", "public, no-cache, must-revalidate")
 
-	vars := mux.Vars(r)
+		vars := mux.Vars(r)
 
-	name := vars["name"]
-	if name == "" {
-		http.Error(w, "Bad Request", http.StatusBadRequest)
-		return
-	}
+		name := vars["name"]
+		if name == "" {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
 
-	fn := filepath.Join(app.conf.Root, fmt.Sprintf("%s.png", name))
-	if fileInfo, err := os.Stat(fn); err == nil {
-		etag := fmt.Sprintf("W/\"%s-%s\"", r.RequestURI, fileInfo.ModTime().Format(time.RFC3339))
+		filename := filepath.Join(app.conf.Root, fmt.Sprintf("%s.txt", name))
+		if !Exists(filename) {
+			log.Warnf("feed does not exist %s", name)
+			http.Error(w, "Feed not found", http.StatusNotFound)
+			return
+		}
+
+		fn := filepath.Join(app.conf.Root, fmt.Sprintf("%s.png", name))
+		if fileInfo, err := os.Stat(fn); err == nil {
+			etag := fmt.Sprintf("W/\"%s-%s\"", r.RequestURI, fileInfo.ModTime().Format(time.RFC3339))
+
+			if match := r.Header.Get("If-None-Match"); match != "" {
+				if strings.Contains(match, etag) {
+					w.WriteHeader(http.StatusNotModified)
+					return
+				}
+			}
+
+			w.Header().Set("Etag", etag)
+			if r.Method == http.MethodHead {
+				return
+			}
+
+			f, err := os.Open(fn)
+			if err != nil {
+				log.WithError(err).Error("error opening avatar file")
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+			defer f.Close()
+
+			fileInfo, err := os.Stat(fn)
+			if err != nil {
+				log.WithError(err).Error("os.Stat() error")
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size))
+
+			if r.Method == http.MethodHead {
+				return
+			}
+
+			if _, err := io.Copy(w, f); err != nil {
+				log.WithError(err).Error("error writing avatar response")
+				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				return
+			}
+
+			return
+		}
+
+		etag := fmt.Sprintf("W/\"%s\"", r.RequestURI)
 
 		if match := r.Header.Get("If-None-Match"); match != "" {
 			if strings.Contains(match, etag) {
@@ -141,70 +224,65 @@ func (app *App) AvatarHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Header().Set("Etag", etag)
+
+		buf := bytes.Buffer{}
+		img := cameron.Identicon([]byte(name), avatarResolution, 12)
+		png.Encode(&buf, img)
+
+		w.Header().Set("Content-Length", fmt.Sprintf("%d", buf.Len()))
+
 		if r.Method == http.MethodHead {
 			return
 		}
 
-		f, err := os.Open(fn)
-		if err != nil {
-			log.WithError(err).Error("error opening avatar file")
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-		defer f.Close()
-
-		if _, err := io.Copy(w, f); err != nil {
-			log.WithError(err).Error("error writing avatar response")
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			return
-		}
-
+		w.Write(buf.Bytes())
 		return
 	}
-
-	etag := fmt.Sprintf("W/\"%s\"", r.RequestURI)
-
-	if match := r.Header.Get("If-None-Match"); match != "" {
-		if strings.Contains(match, etag) {
-			w.WriteHeader(http.StatusNotModified)
-			return
-		}
-	}
-
-	w.Header().Set("Etag", etag)
-	if r.Method == http.MethodHead {
-		return
-	}
-
-	buf := bytes.Buffer{}
-	img := cameron.Identicon([]byte(name), avatarResolution, 12)
-	png.Encode(&buf, img)
-
-	w.Write(buf.Bytes())
+	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 }
 
 func (app *App) WeAreFeedsHandler(w http.ResponseWriter, r *http.Request) {
-	for _, feed := range app.GetFeeds() {
-		fmt.Fprintf(w, "%s %s\n", feed.Name, feed.URL)
+	if r.Method == http.MethodHead || r.Method == http.MethodGet {
+		w.Header().Set("Content-Type", "text/plain")
+
+		if r.Method == http.MethodHead {
+			return
+		}
+
+		for _, feed := range app.GetFeeds() {
+			fmt.Fprintf(w, "%s %s\n", feed.Name, feed.URL)
+		}
+		return
 	}
+	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 }
 
 func (app *App) FeedsHandler(w http.ResponseWriter, r *http.Request) {
-	if accept.PreferredContentTypeLike(r.Header, "text/plain") == "text/plain" {
-		app.WeAreFeedsHandler(w, r)
+	if r.Method == http.MethodHead || r.Method == http.MethodGet {
+		if accept.PreferredContentTypeLike(r.Header, "text/plain") == "text/plain" {
+			app.WeAreFeedsHandler(w, r)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html")
+
+		ctx := struct {
+			Title string
+			Feeds []Feed
+		}{
+			Title: "Available twtxt feeds",
+			Feeds: app.GetFeeds(),
+		}
+
+		if r.Method == http.MethodHead {
+			return
+		}
+
+		if err := render("feeds", feedsTemplate, ctx, w); err != nil {
+			log.WithError(err).Error("error rendering feeds template")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		}
 		return
 	}
-
-	ctx := struct {
-		Title string
-		Feeds []Feed
-	}{
-		Title: "Available twtxt feeds",
-		Feeds: app.GetFeeds(),
-	}
-
-	if err := render("feeds", feedsTemplate, ctx, w); err != nil {
-		log.WithError(err).Error("error rendering feeds template")
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-	}
+	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 }
