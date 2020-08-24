@@ -42,7 +42,7 @@ const indexTemplate = `
         </p>
         <div class="container-fluid">
           <form action="/" method="POST">
-            <input type="url" id="url" name="url" placeholder="URL for the feed's RSS" required>
+            <input type="url" id="url" name="url" placeholder="Enter any website URL here" required>
             <div><button type="submit">Add</button>
           </form>
         </div>
