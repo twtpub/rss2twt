@@ -1,27 +1,71 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
 	"time"
 
-	"github.com/apex/log"
+	"github.com/andyleap/microformats"
+	"github.com/gosimple/slug"
 	"github.com/mmcdole/gofeed"
+	log "github.com/sirupsen/logrus"
 )
 
+var (
+	ErrNoSuitableFeedsFound = errors.New("error: no suitable RSS or Atom feeds found")
+)
+
+// Feed ...
 type Feed struct {
-	Name         string
-	URL          string
+	Name string
+	URL  string
+
 	LastModified string
 }
 
-func ValidateFeed(url string) error {
-	fp := gofeed.NewParser()
-	_, err := fp.ParseURL(url)
+// ValidateFeed ...
+func ValidateFeed(uri string) (Feed, error) {
+	u, err := url.Parse(uri)
 	if err != nil {
-		return err
+		return Feed{}, err
 	}
-	return nil
+
+	res, err := http.Get(u.String())
+	if err != nil {
+		return Feed{}, err
+	}
+	defer res.Body.Close()
+
+	p := microformats.New()
+	data := p.Parse(res.Body, u)
+
+	var feedURL string
+	for _, alt := range data.Alternates {
+		switch alt.Type {
+		case "application/atom+xml", "application/rss+xml":
+			feedURL = alt.URL
+			break
+		}
+	}
+
+	if feedURL == "" {
+		return Feed{}, ErrNoSuitableFeedsFound
+	}
+
+	fp := gofeed.NewParser()
+
+	feed, err := fp.ParseURL(feedURL)
+	if err != nil {
+		return Feed{}, err
+	}
+
+	return Feed{
+		Name: slug.Make(feed.Title),
+		URL:  feedURL,
+	}, nil
 }
 
 func UpdateFeed(filename, url string) error {

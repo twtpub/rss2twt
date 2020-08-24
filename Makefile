@@ -12,14 +12,21 @@ dev: build
 build: clean
 	@go build \
 		-tags "netgo static_build" -installsuffix netgo \
-		-ldflags "-w -X $(shell go list).Version=$(VERSION) -X $(shell go list).Commit=$(COMMIT)" \
+		-ldflags "-w \
+		-X $(shell go list).Version=$(VERSION) \
+		-X $(shell go list).Commit=$(COMMIT)" \
 		.
 
 install: build
 	@go install
 
 image:
-	@docker build -t prologic/rss2twtxt .
+	@docker build \
+		--build-arg VERSION="$(VERSION)" \
+		--build-arg COMMIT="$(COMMIT)"  \
+	    -t r.mills.io/prologic/rss2twtxt \
+		.
+	@docker push r.mills.io/prologic/rss2twtxt
 
 test: install
 	@go test

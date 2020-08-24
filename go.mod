@@ -3,10 +3,12 @@ module github.com/prologic/rss2twtxt
 go 1.14
 
 require (
+	github.com/andyleap/microformats v0.0.0-20150523144534-25ae286f528b
 	github.com/apex/log v1.6.0
 	github.com/dustin/go-humanize v1.0.0
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/gorilla/mux v1.7.4
+	github.com/gosimple/slug v1.9.0
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/mmcdole/gofeed v1.0.0

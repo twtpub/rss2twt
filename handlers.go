@@ -34,7 +34,6 @@ func renderMessage(w http.ResponseWriter, status int, title, message string) err
 		return err
 	}
 
-	http.Error(w, fmt.Sprintf("%s: %s", title, message), status)
 	return nil
 }
 
@@ -43,7 +42,7 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 		ctx := struct {
 			Title string
 		}{
-			Title: "rss2twtxt",
+			Title: "RSS/Atom to twtxt feed aggregator service",
 		}
 
 		if err := render("index", indexTemplate, ctx, w); err != nil {
@@ -51,16 +50,7 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		}
 	} else if r.Method == http.MethodPost {
-		name := r.FormValue("name")
 		url := r.FormValue("url")
-
-		if name == "" {
-			if err := renderMessage(w, http.StatusBadRequest, "Error", "No name supplied"); err != nil {
-				log.WithError(err).Error("error rendering message template")
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			}
-			return
-		}
 
 		if url == "" {
 			if err := renderMessage(w, http.StatusBadRequest, "Error", "No url supplied"); err != nil {
@@ -70,25 +60,16 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		if err := ValidateName(name); err != nil {
-			if err := renderMessage(w, http.StatusBadRequest, "Error", fmt.Sprintf("Invalid feed name: %s", err)); err != nil {
+		feed, err := ValidateFeed(url)
+		if err != nil {
+			if err := renderMessage(w, http.StatusBadRequest, "Error", fmt.Sprintf("Unable to find a valid RSS/Atom feed for: %s", url)); err != nil {
 				log.WithError(err).Error("error rendering message template")
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			}
 			return
 		}
 
-		if err := ValidateFeed(url); err != nil {
-			if err := renderMessage(w, http.StatusBadRequest, "Error", fmt.Sprintf("Invalid feed RSS/Atom feed: %s", url)); err != nil {
-				log.WithError(err).Error("error rendering message template")
-				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			}
-			return
-		}
-
-		name = NormalizeName(name)
-
-		if _, ok := app.conf.Feeds[name]; ok {
+		if _, ok := app.conf.Feeds[feed.Name]; ok {
 			if err := renderMessage(w, http.StatusConflict, "Error", "Feed alreadyd exists"); err != nil {
 				log.WithError(err).Error("error rendering message template")
 				http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -96,7 +77,7 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		app.conf.Feeds[name] = url
+		app.conf.Feeds[feed.Name] = feed.URL
 		if err := app.conf.Save(); err != nil {
 			msg := fmt.Sprintf("Could not save feed: %s", err)
 			if err := renderMessage(w, http.StatusInternalServerError, "Error", msg); err != nil {
@@ -106,7 +87,7 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		msg := fmt.Sprintf("Feed successfully added %s: %s", name, url)
+		msg := fmt.Sprintf("Feed successfully added %s: %s", feed.Name, feed.URL)
 		if err := renderMessage(w, http.StatusCreated, "Success", msg); err != nil {
 			log.WithError(err).Error("error rendering message template")
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -146,7 +127,7 @@ func (app *App) FeedsHandler(w http.ResponseWriter, r *http.Request) {
 		Title string
 		Feeds []Feed
 	}{
-		Title: "Feeds",
+		Title: "Available twtxt feeds",
 		Feeds: app.GetFeeds(),
 	}
 
