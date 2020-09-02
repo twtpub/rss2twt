@@ -29,7 +29,7 @@ const indexTemplate = `
           and <a href="https://twt.social">Twt.social</a> pods.
         </p>
         <p>
-          You may freely create new feeds here by simply droping a website's URL
+          You may freely create new feeds here by simply dropping a website's URL
           into the form below and a valid RSS/Atom feed will be automagically
           discovered and if valid added to the list of <a href="/feeds">/feeds</a>.
         </p>
