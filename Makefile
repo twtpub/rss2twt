@@ -9,7 +9,7 @@ all: dev
 dev: build
 	@./rss2twtxt -v
 
-build: clean
+build:
 	@go build \
 		-tags "netgo static_build" -installsuffix netgo \
 		-ldflags "-w \
