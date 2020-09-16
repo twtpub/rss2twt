@@ -156,19 +156,26 @@ func UpdateFeed(conf *Config, name, url string) error {
 	}
 	defer f.Close()
 
+	old, new := 0, 0
 	for _, item := range feed.Items {
 		if item.PublishedParsed == nil {
-			log.WithField("item", item).Warn("item has no published date")
 			continue
 		}
 
 		if item.PublishedParsed.After(lastModified) {
+			new++
 			text := fmt.Sprintf("%s\t%s ⌘ %s\n", item.PublishedParsed.Format(time.RFC3339), item.Title, item.Link)
 			_, err := f.WriteString(text)
 			if err != nil {
 				return err
 			}
+		} else {
+			old++
 		}
+	}
+
+	if (old + new) == 0 {
+		log.WithField("name", name).WithField("url", url).Warn("empty or bad feed")
 	}
 
 	return nil
