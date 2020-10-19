@@ -16,7 +16,9 @@ import (
 )
 
 const (
-	avatarResolution = 60 // 60x60 px
+	avatarResolution = 60  // 60x60 px
+	mediaResolution  = 640 // 640x480
+	mediaDir         = "media"
 )
 
 var (
@@ -109,9 +111,7 @@ func ValidateFeed(conf *Config, url string) (Feed, error) {
 			ResizeH: avatarResolution,
 		}
 
-		filename := fmt.Sprintf("%s.png", name)
-
-		if err := DownloadImage(conf, feed.Image.URL, filename, opts); err != nil {
+		if _, err := DownloadImage(conf, feed.Image.URL, "", name, opts); err != nil {
 			log.WithError(err).Warnf("error downloading feed image from %s", feed.Image.URL)
 		}
 	}
@@ -127,16 +127,14 @@ func UpdateFeed(conf *Config, name, url string) error {
 	}
 
 	avatarFile := filepath.Join(conf.Root, fmt.Sprintf("%s.png", name))
-	if feed.Image != nil && feed.Image.URL != "" && !Exists(avatarFile) {
+	if feed.Image != nil && feed.Image.URL != "" && !FileExists(avatarFile) {
 		opts := &ImageOptions{
 			Resize:  true,
 			ResizeW: avatarResolution,
 			ResizeH: avatarResolution,
 		}
 
-		filename := fmt.Sprintf("%s.png", name)
-
-		if err := DownloadImage(conf, feed.Image.URL, filename, opts); err != nil {
+		if _, err := DownloadImage(conf, feed.Image.URL, "", name, opts); err != nil {
 			log.WithError(err).Warnf("error downloading feed image from %s", feed.Image.URL)
 		}
 	}
@@ -162,10 +160,39 @@ func UpdateFeed(conf *Config, name, url string) error {
 			continue
 		}
 
+		var mediaURI string
+
+		if item.Image != nil && item.Image.URL != "" {
+			opts := &ImageOptions{Resize: true, ResizeW: mediaResolution, ResizeH: 0}
+
+			uri, err := DownloadImage(conf, item.Image.URL, mediaDir, "", opts)
+			if err != nil {
+				log.WithError(err).Warnf("error downloading item image from %s", item.Image.URL)
+			} else {
+				mediaURI = uri
+			}
+		}
+
 		if item.PublishedParsed.After(lastModified) {
 			new++
-			text := fmt.Sprintf("%s\t%s ⌘ %s\n", item.PublishedParsed.Format(time.RFC3339), item.Title, item.Link)
-			_, err := f.WriteString(text)
+
+			timestamp := item.PublishedParsed.Format(time.RFC3339)
+
+			content := fmt.Sprintf("**%s**", item.Title)
+
+			if item.Description != "" || item.Content != "" {
+				content += fmt.Sprintf("\u2028\u2028> %s", GetContent(item))
+			}
+
+			if mediaURI != "" {
+				content += fmt.Sprintf("\u2028\u2028📷 ![%s](%s)", item.Image.Title, mediaURI)
+			}
+
+			content += fmt.Sprintf("\u2028\u2028👓 [Read more...](%s)", item.Link)
+
+			line := fmt.Sprintf("%s\t%s\n", timestamp, content)
+
+			_, err := f.WriteString(line)
 			if err != nil {
 				return err
 			}

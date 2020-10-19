@@ -2,20 +2,26 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"image"
-	"image/png"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	// Blank import so we can handle image/*
 	_ "image/gif"
 	_ "image/jpeg"
+	"image/png"
 
+	"github.com/JesusIslam/tldr"
 	"github.com/h2non/filetype"
+	"github.com/k3a/html2text"
+	shortuuid "github.com/lithammer/shortuuid/v3"
+	"github.com/mmcdole/gofeed"
 	"github.com/nfnt/resize"
 	log "github.com/sirupsen/logrus"
 )
@@ -28,7 +34,37 @@ var (
 	ErrInvalidImage = errors.New("error: invalid image")
 )
 
-func Exists(name string) bool {
+func GetContent(item *gofeed.Item) string {
+	var text string
+
+	if item.Description != "" {
+		text = item.Description
+	} else if item.Content != "" {
+		text = item.Content
+	}
+
+	text = html2text.HTML2Text(text)
+
+	bag := tldr.New()
+	result, err := bag.Summarize(text, 3)
+	if err != nil {
+		log.WithError(err).Error("error summarizing content")
+		return ""
+	}
+
+	return CleanTwt(strings.Join(result, "\n"))
+}
+
+// CleanTwt cleans a twt's text, replacing new lines with spaces and
+// stripping surrounding spaces.
+func CleanTwt(text string) string {
+	text = strings.TrimSpace(text)
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	text = strings.ReplaceAll(text, "\n", "\u2028")
+	return text
+}
+
+func FileExists(name string) bool {
 	if _, err := os.Stat(name); err != nil {
 		if os.IsNotExist(err) {
 			return false
@@ -64,49 +100,49 @@ type ImageOptions struct {
 	ResizeH int
 }
 
-func DownloadImage(conf *Config, url string, filename string, opts *ImageOptions) error {
+func DownloadImage(conf *Config, url string, resource, name string, opts *ImageOptions) (string, error) {
 	res, err := http.Get(url)
 	if err != nil {
 		log.WithError(err).Errorf("error downloading image from %s", url)
-		return err
+		return "", err
 	}
 	defer res.Body.Close()
 
 	tf, err := ioutil.TempFile("", "rss2twtxt-*")
 	if err != nil {
 		log.WithError(err).Error("error creating temporary file")
-		return err
+		return "", err
 	}
 	defer tf.Close()
 
 	if _, err := io.Copy(tf, res.Body); err != nil {
 		log.WithError(err).Error("error writng temporary file")
-		return err
+		return "", err
 	}
 
 	if _, err := tf.Seek(0, io.SeekStart); err != nil {
 		log.WithError(err).Error("error seeking temporary file")
-		return err
+		return "", err
 	}
 
 	if !IsImage(tf.Name()) {
-		return ErrInvalidImage
+		return "", ErrInvalidImage
 	}
 
 	if _, err := tf.Seek(0, io.SeekStart); err != nil {
 		log.WithError(err).Error("error seeking temporary file")
-		return err
+		return "", err
 	}
 
 	if _, err := tf.Seek(0, io.SeekStart); err != nil {
 		log.WithError(err).Error("error seeking temporary file")
-		return err
+		return "", err
 	}
 
 	img, _, err := image.Decode(tf)
 	if err != nil {
 		log.WithError(err).Error("jpeg.Decode failed")
-		return err
+		return "", err
 	}
 
 	newImg := img
@@ -117,20 +153,36 @@ func DownloadImage(conf *Config, url string, filename string, opts *ImageOptions
 		}
 	}
 
-	fn := filepath.Join(conf.Root, filename)
+	p := filepath.Join(conf.Root, resource)
+	if err := os.MkdirAll(p, 0755); err != nil {
+		log.WithError(err).Error("error creating avatars directory")
+		return "", err
+	}
+
+	var fn string
+
+	if name == "" {
+		uuid := shortuuid.New()
+		fn = filepath.Join(p, fmt.Sprintf("%s.png", uuid))
+	} else {
+		fn = fmt.Sprintf("%s.png", filepath.Join(p, name))
+	}
 
 	of, err := os.OpenFile(fn, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		log.WithError(err).Error("error opening output file")
-		return err
+		return "", err
 	}
 	defer of.Close()
 
-	// Encode uses a Writer, use a Buffer if you need the raw []byte
 	if err := png.Encode(of, newImg); err != nil {
-		log.WithError(err).Error("error reencoding image")
-		return err
+		log.WithError(err).Error("error encoding image")
+		return "", err
 	}
 
-	return nil
+	return fmt.Sprintf(
+		"%s/%s/%s",
+		strings.TrimSuffix(conf.BaseURL, "/"),
+		resource, strings.TrimSuffix(filepath.Base(fn), filepath.Ext(fn)),
+	), nil
 }

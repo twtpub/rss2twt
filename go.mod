@@ -3,6 +3,7 @@ module github.com/prologic/rss2twtxt
 go 1.14
 
 require (
+	github.com/JesusIslam/tldr v0.6.0
 	github.com/andyleap/microformats v0.0.0-20150523144534-25ae286f528b
 	github.com/aofei/cameron v1.1.5
 	github.com/dustin/go-humanize v1.0.0
@@ -10,8 +11,10 @@ require (
 	github.com/gorilla/mux v1.7.4
 	github.com/gosimple/slug v1.9.0
 	github.com/h2non/filetype v1.1.0
+	github.com/k3a/html2text v0.0.0-20191003111652-62431c4a3ba5
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kr/pretty v0.2.0 // indirect
+	github.com/lithammer/shortuuid/v3 v3.0.4
 	github.com/mmcdole/gofeed v1.0.0
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/rickb777/accept v0.0.0-20170318132422-d5183c44530d

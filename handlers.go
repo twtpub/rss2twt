@@ -114,7 +114,7 @@ func (app *App) IndexHandler(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) FeedHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodHead || r.Method == http.MethodGet {
-		w.Header().Set("Content-Type", "text/plain")
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 
 		vars := mux.Vars(r)
 
@@ -125,7 +125,7 @@ func (app *App) FeedHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		filename := filepath.Join(app.conf.Root, fmt.Sprintf("%s.txt", name))
-		if !Exists(filename) {
+		if !FileExists(filename) {
 			log.Warnf("feed does not exist %s", name)
 			http.Error(w, "Feed not found", http.StatusNotFound)
 			return
@@ -137,6 +137,7 @@ func (app *App) FeedHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
+		w.Header().Set("Last-Modified", fileInfo.ModTime().UTC().Format(http.TimeFormat))
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
 
 		if r.Method == http.MethodHead {
@@ -145,6 +146,63 @@ func (app *App) FeedHandler(w http.ResponseWriter, r *http.Request) {
 
 		http.ServeFile(w, r, filename)
 		return
+	}
+	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+}
+
+func (app *App) MediaHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodHead || r.Method == http.MethodGet {
+		w.Header().Set("Content-Type", "text/plain")
+
+		vars := mux.Vars(r)
+
+		name := vars["name"]
+
+		if name == "" {
+			http.Error(w, "Bad Request", http.StatusBadRequest)
+			return
+		}
+
+		w.Header().Set("Content-Type", "image/png")
+		fn := filepath.Join(app.conf.Root, mediaDir, fmt.Sprintf("%s.png", name))
+
+		if !FileExists(fn) {
+			log.Warnf("media not found: %s", name)
+			http.Error(w, "Media Not Found", http.StatusNotFound)
+			return
+		}
+
+		fileInfo, err := os.Stat(fn)
+		if err != nil {
+			log.WithError(err).Error("error reading media file info")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+
+		etag := fmt.Sprintf("W/\"%s-%s\"", r.RequestURI, fileInfo.ModTime().Format(time.RFC3339))
+		if match := r.Header.Get("If-None-Match"); match != "" {
+			if strings.Contains(match, etag) {
+				w.WriteHeader(http.StatusNotModified)
+				return
+			}
+		}
+
+		f, err := os.Open(fn)
+		if err != nil {
+			log.WithError(err).Error("error opening media file")
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			return
+		}
+		defer f.Close()
+
+		w.Header().Set("Etag", etag)
+		w.Header().Set("Cache-Control", "public, max-age=7776000")
+
+		if r.Method == http.MethodHead {
+			return
+		}
+
+		http.ServeContent(w, r, filepath.Base(fn), fileInfo.ModTime(), f)
 	}
 	http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 }
@@ -163,7 +221,7 @@ func (app *App) AvatarHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		filename := filepath.Join(app.conf.Root, fmt.Sprintf("%s.txt", name))
-		if !Exists(filename) {
+		if !FileExists(filename) {
 			log.Warnf("feed does not exist %s", name)
 			http.Error(w, "Feed not found", http.StatusNotFound)
 			return
