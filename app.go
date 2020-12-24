@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
 	"sort"
 
 	"github.com/dustin/go-humanize"
@@ -58,8 +57,14 @@ func (app *App) setupCronJobs() error {
 }
 
 func (app *App) GetFeeds() (feeds []Feed) {
-	for name := range app.conf.Feeds {
-		filename := filepath.Join(app.conf.Root, fmt.Sprintf("%s.txt", name))
+	files, err := WalkMatch(app.conf.Root, "*.txt")
+	if err != nil {
+		log.WithError(err).Error("error reading feeds directory")
+		return nil
+	}
+
+	for _, filename := range files {
+		name := BaseWithoutExt(filename)
 
 		stat, err := os.Stat(filename)
 		if err != nil {
