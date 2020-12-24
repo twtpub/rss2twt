@@ -137,6 +137,7 @@ func (app *App) FeedHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 			return
 		}
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.Header().Set("Content-Length", fmt.Sprintf("%d", fileInfo.Size()))
 
 		if r.Method == http.MethodHead {
@@ -249,6 +250,7 @@ func (app *App) WeAreFeedsHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		for _, feed := range app.GetFeeds() {
 			fmt.Fprintf(w, "%s %s\n", feed.Name, feed.URL)
 		}
