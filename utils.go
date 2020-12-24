@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"image"
 	"image/png"
 	"io"
@@ -10,6 +11,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
+	"strings"
+	"time"
 
 	// Blank import so we can handle image/*
 	_ "image/gif"
@@ -133,4 +137,51 @@ func DownloadImage(conf *Config, url string, filename string, opts *ImageOptions
 	}
 
 	return nil
+}
+
+func AppendTwt(w io.Writer, text string, args ...interface{}) error {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return fmt.Errorf("cowardly refusing to twt empty text, or only spaces")
+	}
+
+	// Support replacing/editing an existing Twt whilst preserving Created Timestamp
+	// or posting a Twt with a custom Timestamp.
+	now := time.Now().UTC()
+	if len(args) == 1 {
+		if t, ok := args[0].(time.Time); ok {
+			now = t.UTC()
+		}
+	}
+
+	line := fmt.Sprintf(
+		"%s\t%s\n",
+		now.Format(time.RFC3339),
+		text,
+	)
+
+	if _, err := w.Write([]byte(line)); err != nil {
+		return fmt.Errorf("error writing twt to writer: %w", err)
+	}
+
+	return nil
+}
+
+func FindClosestInt(target int, xs []int) int {
+	n := sort.SearchInts(xs, target)
+	if n >= len(xs) {
+		return xs[len(xs)-1]
+	}
+	if xs[n]-target < target-xs[n-1] {
+		n++
+	}
+	return xs[n-1]
+}
+
+func URLForFeed(conf *Config, name string) string {
+	return fmt.Sprintf(
+		"%s/%s/twtxt.txt",
+		strings.TrimSuffix(conf.BaseURL, "/"),
+		name,
+	)
 }
