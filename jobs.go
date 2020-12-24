@@ -15,8 +15,8 @@ var Jobs map[string]JobFactory
 
 func init() {
 	Jobs = map[string]JobFactory{
-		"@every 5m":  NewUpdateFeedsJob,
-		"@every 30m": NewTikTokJob,
+		"@every 5m":    NewUpdateFeedsJob,
+		"0 30 * * * *": NewTikTokJob,
 	}
 }
 
