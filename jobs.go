@@ -128,10 +128,14 @@ I am %s an automated feed that twts every 30m with the current time (UTC)
 		clock = fmt.Sprintf("%s past %s", num2words.Convert(min), clock)
 	}
 
-	if hour < 12 {
+	if now.Hour() < 6 {
 		clock += " in the morning 😴"
-	} else {
+	} else if now.Hour() < 12 {
 		clock += " 🌞"
+	} else if now.Hour() < 18 {
+		clock += " in the afternoon 🌅"
+	} else {
+		clock += " in the evening 🌝"
 	}
 
 	if err := AppendTwt(f, fmt.Sprintf("%s The time is now %s", sym, clock)); err != nil {
