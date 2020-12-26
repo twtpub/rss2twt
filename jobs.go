@@ -101,7 +101,7 @@ I am %s an automated feed that twts every 30m with the current time (UTC)
 	now := time.Now().UTC()
 
 	hour := now.Hour() % 12
-	min := FindClosestInt(now.Minute(), []int{0, 30})
+	min := now.Minute()
 
 	var key int
 

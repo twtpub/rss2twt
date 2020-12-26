@@ -11,7 +11,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 	"time"
 
@@ -165,17 +164,6 @@ func AppendTwt(w io.Writer, text string, args ...interface{}) error {
 	}
 
 	return nil
-}
-
-func FindClosestInt(target int, xs []int) int {
-	n := sort.SearchInts(xs, target)
-	if n >= len(xs) {
-		return xs[len(xs)-1]
-	}
-	if xs[n]-target < target-xs[n-1] {
-		n++
-	}
-	return xs[n-1]
 }
 
 func URLForFeed(conf *Config, name string) string {
