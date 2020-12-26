@@ -17,6 +17,7 @@ import (
 
 const (
 	avatarResolution = 60 // 60x60 px
+	rssTwtxtTemplate = "%s\t%s ⌘ [Read more...](%s)\n"
 )
 
 var (
@@ -164,7 +165,12 @@ func UpdateFeed(conf *Config, name, url string) error {
 
 		if item.PublishedParsed.After(lastModified) {
 			new++
-			text := fmt.Sprintf("%s\t%s ⌘ %s\n", item.PublishedParsed.Format(time.RFC3339), item.Title, item.Link)
+			text := fmt.Sprintf(
+				rssTwtxtTemplate,
+				item.PublishedParsed.Format(time.RFC3339),
+				item.Title,
+				item.Link,
+			)
 			_, err := f.WriteString(text)
 			if err != nil {
 				return err
