@@ -135,7 +135,7 @@ I am %s an automated feed that twts every 30m with the current time (UTC)
 	} else if now.Hour() < 18 {
 		clock += " in the afternoon 🌅"
 	} else {
-		clock += " in the evening 🌝"
+		clock += " in the evening 🌛"
 	}
 
 	if err := AppendTwt(f, fmt.Sprintf("%s The time is now %s", sym, clock)); err != nil {
