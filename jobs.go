@@ -12,13 +12,30 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var Jobs map[string]JobFactory
+// JobSpec ...
+type JobSpec struct {
+	Schedule string
+	Factory  JobFactory
+}
+
+func NewJobSpec(schedule string, factory JobFactory) JobSpec {
+	return JobSpec{schedule, factory}
+}
+
+var (
+	Jobs        map[string]JobSpec
+	StartupJobs map[string]JobSpec
+)
 
 func init() {
-	Jobs = map[string]JobFactory{
-		"@daily":         NewRotateFeedsJob,
-		"@every 5m":      NewUpdateFeedsJob,
-		"0 0,30 * * * *": NewTikTokJob,
+	Jobs = map[string]JobSpec{
+		"RotateFeeds": NewJobSpec("@daily", NewRotateFeedsJob),
+		"UpdateFeeds": NewJobSpec("@every 5m", NewUpdateFeedsJob),
+		"TikTokBot":   NewJobSpec("0 0,30 * * * *", NewTikTokJob),
+	}
+
+	StartupJobs = map[string]JobSpec{
+		"RotateFeeds": Jobs["RotateFeeds"],
 	}
 }
 

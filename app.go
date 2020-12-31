@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"time"
 
 	"github.com/dustin/go-humanize"
 	"github.com/gorilla/mux"
@@ -47,13 +48,30 @@ func (app *App) initRoutes() *mux.Router {
 }
 
 func (app *App) setupCronJobs() error {
-	for spec, factory := range Jobs {
-		job := factory(app.conf)
-		if err := app.cron.AddJob(spec, job); err != nil {
+	for name, jobSpec := range Jobs {
+		if jobSpec.Schedule == "" {
+			continue
+		}
+
+		job := jobSpec.Factory(app.conf)
+		if err := app.cron.AddJob(jobSpec.Schedule, job); err != nil {
 			return err
 		}
+		log.Infof("Started background job %s (%s)", name, jobSpec.Schedule)
 	}
+
 	return nil
+}
+
+func (app *App) runStartupJobs() {
+	time.Sleep(time.Second * 5)
+
+	log.Info("running startup jobs")
+	for name, jobSpec := range StartupJobs {
+		job := jobSpec.Factory(app.conf)
+		log.Infof("running %s now...", name)
+		job.Run()
+	}
 }
 
 func (app *App) GetFeeds() (feeds []Feed) {
@@ -89,11 +107,12 @@ func (app *App) Run() error {
 		log.WithError(err).Error("error setting up background jobs")
 		return err
 	}
-
 	app.cron.Start()
-	log.Infof("started background jobs")
+	log.Info("started background jobs")
 
 	log.Infof("rss2twtxt %s listening on http://%s", FullVersion(), app.bind)
+
+	go app.runStartupJobs()
 
 	return http.ListenAndServe(app.bind, router)
 }
