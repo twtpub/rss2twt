@@ -61,7 +61,7 @@ func (job *RotateFeedsJob) Run() {
 	for _, file := range files {
 		stat, err := os.Stat(file)
 		if err != nil {
-			log.WithError(err).Error("error getting feed size: %s", err)
+			log.WithError(err).Error("error getting feed size")
 			continue
 		}
 
@@ -74,7 +74,7 @@ func (job *RotateFeedsJob) Run() {
 			)
 
 			if err := RotateFile(file); err != nil {
-				log.WithError(err).Errorf("error rotating feed: %s", err)
+				log.WithError(err).Error("error rotating feed")
 			}
 		}
 	}
