@@ -9,6 +9,7 @@ import (
 type Config struct {
 	Root    string
 	BaseURL string
+	MaxSize int64             // maximum feed size before rotating
 	Feeds   map[string]string // name -> url
 
 	path string // path to config file that was loaded used by .Save()

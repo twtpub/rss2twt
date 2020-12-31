@@ -31,6 +31,11 @@ var (
 	ErrInvalidImage = errors.New("error: invalid image")
 )
 
+func RotateFile(fn string) error {
+	now := time.Now().Unix()
+	return os.Rename(fn, fmt.Sprintf("%s.%d", fn, now))
+}
+
 func Exists(name string) bool {
 	if _, err := os.Stat(name); err != nil {
 		if os.IsNotExist(err) {

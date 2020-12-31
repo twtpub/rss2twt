@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/divan/num2words"
+	"github.com/dustin/go-humanize"
 	"github.com/robfig/cron"
 	log "github.com/sirupsen/logrus"
 )
@@ -15,12 +16,52 @@ var Jobs map[string]JobFactory
 
 func init() {
 	Jobs = map[string]JobFactory{
+		"@daily":         NewRotateFeedsJob,
 		"@every 5m":      NewUpdateFeedsJob,
 		"0 0,30 * * * *": NewTikTokJob,
 	}
 }
 
 type JobFactory func(conf *Config) cron.Job
+
+type RotateFeedsJob struct {
+	conf *Config
+}
+
+func NewRotateFeedsJob(conf *Config) cron.Job {
+	return &RotateFeedsJob{conf: conf}
+}
+
+func (job *RotateFeedsJob) Run() {
+	conf := job.conf
+
+	files, err := WalkMatch(conf.Root, "*.txt")
+	if err != nil {
+		log.WithError(err).Error("error reading feeds directory")
+		return
+	}
+
+	for _, file := range files {
+		stat, err := os.Stat(file)
+		if err != nil {
+			log.WithError(err).Error("error getting feed size: %s", err)
+			continue
+		}
+
+		if stat.Size() > conf.MaxSize {
+			log.Infof(
+				"rotating %s with size %s > %s",
+				BaseWithoutExt(file),
+				humanize.Bytes(uint64(stat.Size())),
+				humanize.Bytes(uint64(conf.MaxSize)),
+			)
+
+			if err := RotateFile(file); err != nil {
+				log.WithError(err).Errorf("error rotating feed: %s", err)
+			}
+		}
+	}
+}
 
 type UpdateFeedsJob struct {
 	conf *Config

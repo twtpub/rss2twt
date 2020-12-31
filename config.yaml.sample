@@ -1,5 +1,6 @@
 ---
 root: ./feeds
-baseURL: /
+baseurl: /
+maxsize: 1048576
 feeds:
   unexplained_mysteries: http://www.unexplained-mysteries.com/news/umnews.xml

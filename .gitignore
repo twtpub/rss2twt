@@ -1,6 +1,7 @@
 *~
 *.bak
 *.txt
+.DS_Store
 
 /feeds
 /rss2twtxt
