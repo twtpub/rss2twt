@@ -103,7 +103,7 @@ func ValidateFeed(conf *Config, url string) (Feed, error) {
 
 	name := slug.Make(feed.Title)
 
-	if feed.Image.URL != "" {
+	if feed.Image != nil && feed.Image.URL != "" {
 		opts := &ImageOptions{
 			Resize:  true,
 			ResizeW: avatarResolution,
