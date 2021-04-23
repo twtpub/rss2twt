@@ -17,7 +17,7 @@ import (
 
 const (
 	avatarResolution = 60 // 60x60 px
-	rssTwtxtTemplate = "%s\t%s ⌘ [Read more...](%s)\n"
+	rssTwtxtTemplate = "%s\t%s ⌘ [更多内容...](%s)\n"
 )
 
 var (

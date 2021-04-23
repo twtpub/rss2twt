@@ -17,7 +17,7 @@ then be consumed by any standard twtxt client such as:
 
 There is also a publically (_free_) service online available at:
 
-- https://feeds.twtxt.net/
+- https://feeds.twtxt.cc/
 
 ![Screenshot 1](./screenshot1.png)
 ![Screenshot 2](./screenshot2.png)
@@ -27,7 +27,7 @@ There is also a publically (_free_) service online available at:
 ### Source
 
 ```#!bash
-$ go get -u github.com/prologic/rss2twtxt
+$ go get -u github.com/twtpub/rss2twtxt
 ```
 
 ## Usage
@@ -42,7 +42,7 @@ Then visit: http://localhost:8000/
 
 ## Related Projects
 
-- [twtxt](https://github.com/prologic/twtxt)
+- [twtxt](https://github.com/twtpub/twtxt)
 
 ## License
 

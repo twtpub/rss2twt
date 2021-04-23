@@ -1,4 +1,4 @@
-module github.com/prologic/rss2twtxt
+module github.com/twtpub/rss2twt
 
 go 1.14
 
@@ -18,6 +18,7 @@ require (
 	github.com/rickb777/accept v0.0.0-20170318132422-d5183c44530d
 	github.com/robfig/cron v1.2.0
 	github.com/sirupsen/logrus v1.4.2
+	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/pflag v1.0.3
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
 	golang.org/x/sys v0.0.0-20190804053845-51ab0e2deafa // indirect

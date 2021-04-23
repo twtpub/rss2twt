@@ -1,0 +1,67 @@
+# https://taskfile.dev
+
+version: '3'
+
+output: 'prefixed'
+
+vars:
+  Rss2twtSvc: rss2twt
+  Rss2twtExe: rss2twt{{exeExt}}
+
+tasks:
+  default:
+    cmds:
+      - task -l
+    silent: true
+
+  build:
+    desc: build rss2twt service
+    deps: [config]
+    cmds:
+      - echo "{{.Rss2twtExe}} building..."
+      - go build -v -o {{.Rss2twtExe}} -ldflags "-w -X {{.Module}}.Version={{.Version}} -X {{.Module}}.Commit={{.Commit}}" .
+      - echo "{{.Rss2twtExe}} built."
+    generates:
+      - '{{.Rss2twtExe}}'
+    sources:
+      - '**/*.go'
+    method: none
+    vars:
+      Commit:
+        sh: git rev-parse --short HEAD
+      Version:
+        sh: git describe --abbrev=0 --tags
+      Module:
+        sh: go list
+    silent: false
+
+  run:
+    cmds:
+      - ./{{.Rss2twtExe}}  --server --bind 127.0.0.1:8001 
+    deps: [build]
+    desc: run rss2twt service
+    silent: false
+
+  config:
+    cmds:
+      - cp ./config.yaml.sample ./config.yaml
+
+  release:
+    desc: release
+    deps: [config]
+    cmds:
+      - echo 'building for release...'
+      - GOOS=linux go build -v -o ./release/{{.Rss2twtExe}} -ldflags "-w -X {{.Module}}.Version={{.Version}} -X {{.Module}}.Commit={{.Commit}}" main.go
+      - echo 'build done.'
+    vars:
+      Commit:
+        sh: git rev-parse --short HEAD
+      Version:
+        sh: git describe --abbrev=0 --tags
+      Module:
+        sh: go list
+
+  clean:
+    desc: clean
+    cmds:
+      - rm -rf ./release

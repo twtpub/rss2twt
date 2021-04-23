@@ -19,16 +19,16 @@ var (
 
 func init() {
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "用法: %s [配置项]\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 
-	flag.BoolVarP(&version, "version", "v", false, "display version information")
-	flag.BoolVarP(&debug, "debug", "d", false, "enable debug logging")
+	flag.BoolVarP(&version, "version", "v", false, "显示版本信息")
+	flag.BoolVarP(&debug, "debug", "d", false, "启用调试")
 
-	flag.BoolVarP(&server, "server", "s", false, "enable server mode")
-	flag.StringVarP(&bind, "bind", "b", "0.0.0.0:8000", "interface and port to bind to in server mode")
-	flag.StringVarP(&config, "config", "c", "config.yaml", "configuration file for server mode")
+	flag.BoolVarP(&server, "server", "s", false, "Web 服务模式")
+	flag.StringVarP(&bind, "bind", "b", "0.0.0.0:8001", "Web 服务模式绑定地址及端口")
+	flag.StringVarP(&config, "config", "c", "config.yaml", "Web 服务模式下使用的配置文件")
 }
 
 func main() {
@@ -41,7 +41,7 @@ func main() {
 	}
 
 	if version {
-		fmt.Printf("rss2twtxt %s\n", FullVersion())
+		fmt.Printf("rss2twt%s\n", FullVersion())
 		os.Exit(0)
 	}
 

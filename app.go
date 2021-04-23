@@ -110,7 +110,7 @@ func (app *App) Run() error {
 	app.cron.Start()
 	log.Info("started background jobs")
 
-	log.Infof("rss2twtxt %s listening on http://%s", FullVersion(), app.bind)
+	log.Infof("rss2twt %s listening on http://%s", FullVersion(), app.bind)
 
 	go app.runStartupJobs()
 
