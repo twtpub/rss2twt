@@ -48,10 +48,10 @@ tasks:
 
   release:
     desc: release
-    deps: [config]
     cmds:
       - echo 'building for release...'
       - GOOS=linux go build -v -o ./release/{{.Rss2twtExe}} -ldflags "-w -X {{.Module}}.Version={{.Version}} -X {{.Module}}.Commit={{.Commit}}" .
+      - cp ./config.yaml.sample ./release/config.yaml
       - echo 'build done.'
     vars:
       Commit:
